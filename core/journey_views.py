@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
-from .models import Booking, Route, Schedule, Seat
+from .models import Booking, Route, Schedule, Seat, JourneyDisruption
 
 
 WEEKDAY_FIELDS = (
@@ -49,6 +49,8 @@ def search_journeys(request):
         ).select_related("route__origin", "route__destination", "train").order_by("departure_time")
         if travel_date:
             schedules = schedules.filter(**{WEEKDAY_FIELDS[travel_date.weekday()]: True})
+            cancelled = JourneyDisruption.objects.filter(travel_date=travel_date, status=JourneyDisruption.Status.CANCELLED).values_list('schedule_id', flat=True)
+            schedules = schedules.exclude(pk__in=cancelled)
             if travel_date == timezone.localdate():
                 schedules = schedules.filter(departure_time__gt=timezone.localtime().time())
 
@@ -70,6 +72,8 @@ def available_seats(request, schedule_id):
         pk=schedule_id, is_active=True, train__is_active=True,
         route__is_active=True, route__origin__is_active=True, route__destination__is_active=True,
     )
+    if JourneyDisruption.objects.filter(schedule=schedule, travel_date=travel_date, status=JourneyDisruption.Status.CANCELLED).exists():
+        raise Http404("This journey has been cancelled.")
     if not getattr(schedule, WEEKDAY_FIELDS[travel_date.weekday()]):
         raise Http404("This train does not run on the selected date.")
     if travel_date == timezone.localdate() and schedule.departure_time <= timezone.localtime().time():
