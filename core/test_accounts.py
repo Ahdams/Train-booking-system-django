@@ -17,6 +17,7 @@ class AccountTests(TestCase):
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertEqual(user.email, "passenger@example.com")
+        self.assertEqual(Wallet.objects.get(user=user).balance, Decimal("0"))
 
     def test_duplicate_email_rejected_case_insensitively(self):
         get_user_model().objects.create_user(username="existing", email="passenger@example.com", password="SomePassword456!")
