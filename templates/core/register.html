@@ -1,0 +1,4 @@
+{% extends 'core/account_base.html' %}{% block title %}Create account{% endblock %}
+{% block content %}<section class="auth-card"><span class="account-kicker">START YOUR JOURNEY</span><h1>Create your account</h1><p>Keep your bookings in one place.</p>
+<form method="post">{% csrf_token %}{% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="form-errors">{{ field.errors }}</div>{% endif %}{% endfor %}
+<button class="account-button" type="submit">Create account →</button></form><p class="auth-footer">Already registered? <a href="{% url 'login' %}">Sign in</a></p></section>{% endblock %}
