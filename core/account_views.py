@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 
 from .forms import PassengerRegistrationForm
 from .models import Booking, PassengerReport, Wallet, WalletTransaction
+from .reservation_service import expire_holds
 
 
 def register(request):
@@ -33,6 +34,7 @@ class PassengerLogoutView(LogoutView):
 
 @login_required
 def dashboard(request):
+    expire_holds()
     bookings = Booking.objects.filter(user=request.user).select_related(
         "schedule__route__origin", "schedule__route__destination", "seat"
     ).order_by("-created_at")[:5]
@@ -47,6 +49,7 @@ def dashboard(request):
 
 @login_required
 def my_bookings(request):
+    expire_holds()
     bookings = Booking.objects.filter(user=request.user).select_related(
         "schedule__route__origin", "schedule__route__destination", "seat"
     ).order_by("-created_at")
