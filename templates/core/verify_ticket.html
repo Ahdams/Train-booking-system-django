@@ -1,0 +1,5 @@
+{% extends 'core/account_base.html' %}{% block title %}Verify ticket{% endblock %}
+{% block content %}<div class="account-heading"><span class="account-kicker">STAFF VERIFICATION</span><h1>Verify a train ticket</h1><p>Check a passenger's booking reference before boarding.</p></div>
+<section class="account-panel"><form method="get"><label for="reference">Booking reference</label><input id="reference" name="reference" maxlength="32" value="{{ reference }}" required><button type="submit">Verify ticket</button></form>
+{% if verdict %}<h2 role="status">{{ verdict }}</h2>{% endif %}
+{% if booking %}<div class="account-item"><strong>{{ booking.reference }}</strong><span>Passenger: {{ booking.passenger_name }}</span><span>Status: {{ booking.get_status_display }}</span><span>{{ booking.schedule.route.origin.city }} → {{ booking.schedule.route.destination.city }}</span><span>{{ booking.travel_date }} at {{ booking.schedule.departure_time|time:"H:i" }}</span><span>Train: {{ booking.schedule.train.name }} · Coach {{ booking.seat.coach.code }} · Seat {{ booking.seat.label }}</span></div>{% endif %}</section>{% endblock %}
