@@ -42,7 +42,8 @@ def cancel_booking(*, user, booking_id, now=None):
         if percentage == 0:
             raise ValidationError("This train has departed. Cancellation is no longer available.")
         amount = (booking.fare_paid * percentage).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=user)
+        if booking.fare_paid > 0 and not WalletTransaction.objects.filter(
+            booking=booking, kind=WalletTransaction.Kind.DEBIT, amount=booking.fare_paid,\n        ).exists():\n            raise ValidationError("No verified wallet payment exists for this booking.")\n        wallet, _ = Wallet.objects.select_for_update().get_or_create(user=user)
         if WalletTransaction.objects.filter(booking=booking, kind=WalletTransaction.Kind.REFUND).exists():
             raise ValidationError("This ticket has already been refunded.")
         wallet.balance += amount
