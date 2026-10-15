@@ -71,6 +71,11 @@ class SingleHoldTests(TestCase):
         first = self.hold(self.seat1)
         first.status = Booking.Status.CONFIRMED
         first.save(update_fields=["status"])
+        wallet, _ = Wallet.objects.get_or_create(user=self.user)
+        WalletTransaction.objects.create(
+            wallet=wallet, booking=first, kind="debit",
+            amount=first.fare_paid, balance_after=wallet.balance,
+        )
         departure = timezone.make_aware(datetime.combine(self.day, self.schedule.departure_time))
         amount = cancel_booking(user=self.user, booking_id=first.id, now=departure - timedelta(minutes=25))
         self.assertEqual(amount, Decimal("1200.00"))
