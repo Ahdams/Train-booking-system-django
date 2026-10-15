@@ -1,7 +1,7 @@
 """Route-specific train discovery and dated seat availability."""
 from datetime import date
 
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
@@ -83,6 +83,7 @@ def available_seats(request, schedule_id):
     seats = Seat.objects.filter(
         coach__train=schedule.train, coach__train__is_active=True, is_active=True
     ).select_related("coach").order_by("coach__code", "label")
+    reserved_ids = set(reserved_ids)
     seat_rows = [{"seat": seat, "available": seat.id not in reserved_ids} for seat in seats]
     fares = {fare.travel_class: fare.amount for fare in schedule.fares.all()}
     for row in seat_rows:
