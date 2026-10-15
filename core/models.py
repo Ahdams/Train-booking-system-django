@@ -183,3 +183,30 @@ class PassengerReport(models.Model):
     admin_response = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class JourneyDisruption(models.Model):
+    """A dated schedule exception; never alters other days of the timetable."""
+    class Status(models.TextChoices):
+        DELAYED = "delayed", "Delayed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    schedule = models.ForeignKey(Schedule, on_delete=models.PROTECT, related_name="disruptions")
+    travel_date = models.DateField()
+    status = models.CharField(max_length=12, choices=Status.choices)
+    reason = models.TextField()
+    revised_departure_time = models.TimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["schedule", "travel_date"], name="unique_dated_disruption"),
+        ]
+
+    def clean(self):
+        if self.status == self.Status.DELAYED and self.revised_departure_time is None:
+            raise ValidationError("A delayed journey needs a revised departure time.")
+        if self.status == self.Status.CANCELLED and self.revised_departure_time is not None:
+            raise ValidationError("Cancelled journeys cannot have a revised departure time.")
+        if not self.reason.strip():
+            raise ValidationError("Provide a reason for the disruption.")
