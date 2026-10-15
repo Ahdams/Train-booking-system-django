@@ -1,5 +1,5 @@
 """Atomic, one-active-hold-per-user reservations."""
-from datetime import timedelta
+from datetime import timedelta, datetime
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -19,12 +19,31 @@ def expire_holds(now=None):
     ).update(status=Booking.Status.EXPIRED)
 
 
+def departure_at(booking):
+    return timezone.make_aware(
+        datetime.combine(booking.travel_date, booking.schedule.departure_time),
+        timezone.get_current_timezone(),
+    )
+
+
+def has_upcoming_confirmed_booking(user, now):
+    for booking in Booking.objects.filter(
+        user=user, status=Booking.Status.CONFIRMED,
+        travel_date__gte=timezone.localdate(now),
+    ).select_related("schedule"):
+        if departure_at(booking) > now:
+            return True
+    return False
+
+
 def reserve_seat(*, user, schedule_id, seat_id, travel_date):
     """Serialize reservations for a user; database constraints guard competing seats."""
     with transaction.atomic():
         get_user_model().objects.select_for_update().get(pk=user.pk)
         now = timezone.now()
         expire_holds(now)
+        if has_upcoming_confirmed_booking(user, now):
+            raise ValidationError("Your confirmed journey has not departed. Cancel it before booking another seat.")
         if Booking.objects.filter(user=user, status=Booking.Status.HELD).exists():
             raise ValidationError("Cancel your current reservation before reserving another seat.")
         schedule = Schedule.objects.select_related("route", "train").get(pk=schedule_id)
