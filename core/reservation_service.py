@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from .models import Booking, Fare, Schedule, Seat
+from .models import Booking, Fare, Schedule, Seat, JourneyDisruption
 
 HOLD_MINUTES = 10
 
@@ -61,6 +61,8 @@ def reserve_seat(*, user, schedule_id, seat_id, travel_date):
                    "operates_thursday", "operates_friday", "operates_saturday", "operates_sunday")[travel_date.weekday()]
         if not getattr(schedule, weekday):
             raise ValidationError("This train does not operate on that day.")
+        if JourneyDisruption.objects.filter(schedule=schedule, travel_date=travel_date, status=JourneyDisruption.Status.CANCELLED).exists():
+            raise ValidationError("This journey has been cancelled by the operator.")
         fare = Fare.objects.filter(schedule=schedule, travel_class=seat.coach.travel_class).first()
         if fare is None:
             raise ValidationError("No fare is configured for this seat.")
