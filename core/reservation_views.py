@@ -7,7 +7,8 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .reservation_service import cancel_hold, reserve_seat
+from .reservation_service import reserve_seat
+from .cancellation_service import cancel_booking
 
 
 @login_required
@@ -29,8 +30,8 @@ def cancel_reservation(request, booking_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     try:
-        cancel_hold(user=request.user, booking_id=booking_id)
-        messages.success(request, "Reservation cancelled. You may reserve another seat.")
+        refund = cancel_booking(user=request.user, booking_id=booking_id)
+        messages.success(request, f"Booking cancelled. ₦{refund:,.2f} credited to your wallet as applicable.")
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect("my_bookings")
