@@ -1,0 +1,3 @@
+{% extends 'core/account_base.html' %}{% block title %}My bookings{% endblock %}
+{% block content %}<div class="account-heading"><span class="account-kicker">YOUR JOURNEYS</span><h1>My bookings</h1><p>Only bookings linked to your account are shown.</p></div>
+<section class="account-panel">{% for booking in bookings %}<div class="account-item"><strong>{{ booking.schedule.route.origin.city }} → {{ booking.schedule.route.destination.city }}</strong><span>{{ booking.travel_date }} · Seat {{ booking.seat }} · {{ booking.get_status_display }} · {{ booking.reference }}</span></div>{% empty %}<p>You haven't booked a train yet.</p>{% endfor %}</section>{% endblock %}
