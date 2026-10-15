@@ -87,7 +87,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(name='Wallet', fields=[
             ('id', models.BigAutoField(primary_key=True, serialize=False)),
             ('balance', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-            ('user', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='rail_wallet', to=settings.AUTH_USER_MODEL)),
+            ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rail_wallet', to=settings.AUTH_USER_MODEL)),
         ], options={'constraints': [models.CheckConstraint(condition=Q(balance__gte=0), name='wallet_balance_nonnegative')]}),
         migrations.CreateModel(name='WalletTransaction', fields=[
             ('id', models.BigAutoField(primary_key=True, serialize=False)),
