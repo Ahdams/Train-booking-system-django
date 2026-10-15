@@ -1,4 +1,4 @@
-from datetime import timedelta, time
+from datetime import timedelta, time, datetime
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -8,6 +8,8 @@ from django.utils import timezone
 
 from .models import Booking, Coach, Fare, Route, Schedule, Seat, Station, Train
 from .reservation_service import reserve_seat, cancel_hold
+from .cancellation_service import refund_percentage, cancel_booking
+from .models import Wallet, WalletTransaction
 
 
 class SingleHoldTests(TestCase):
@@ -51,8 +53,38 @@ class SingleHoldTests(TestCase):
         first.refresh_from_db()
         self.assertEqual(first.status, Booking.Status.HELD)
 
-    def test_confirmed_booking_does_not_block_new_hold(self):
+    def test_confirmed_booking_blocks_new_hold(self):
         first = self.hold(self.seat1)
         first.status = Booking.Status.CONFIRMED
         first.save(update_fields=["status"])
+        with self.assertRaisesMessage(ValidationError, "confirmed journey has not departed"):
+            self.hold(self.seat2)
+
+    def test_departed_confirmed_booking_does_not_block(self):
+        first = self.hold(self.seat1)
+        first.status = Booking.Status.CONFIRMED
+        first.travel_date = timezone.localdate() - timedelta(days=1)
+        first.save(update_fields=["status", "travel_date"])
         self.assertEqual(self.hold(self.seat2).status, Booking.Status.HELD)
+
+    def test_cancelling_confirmed_booking_refunds_wallet_once(self):
+        first = self.hold(self.seat1)
+        first.status = Booking.Status.CONFIRMED
+        first.save(update_fields=["status"])
+        departure = timezone.make_aware(datetime.combine(self.day, self.schedule.departure_time))
+        amount = cancel_booking(user=self.user, booking_id=first.id, now=departure - timedelta(minutes=25))
+        self.assertEqual(amount, Decimal("1200.00"))
+        self.assertEqual(Wallet.objects.get(user=self.user).balance, Decimal("1200.00"))
+        self.assertEqual(WalletTransaction.objects.filter(booking=first, kind="refund").count(), 1)
+        with self.assertRaises(ValidationError):
+            cancel_booking(user=self.user, booking_id=first.id, now=departure - timedelta(minutes=20))
+        self.assertEqual(Wallet.objects.get(user=self.user).balance, Decimal("1200.00"))
+
+    def test_refund_percentage_boundaries(self):
+        now = timezone.now()
+        self.assertEqual(refund_percentage(now + timedelta(days=2), now), Decimal("0.90"))
+        self.assertEqual(refund_percentage(now + timedelta(hours=24), now), Decimal("0.75"))
+        self.assertEqual(refund_percentage(now + timedelta(hours=2), now), Decimal("0.50"))
+        self.assertEqual(refund_percentage(now + timedelta(minutes=30), now), Decimal("0.50"))
+        self.assertEqual(refund_percentage(now + timedelta(minutes=25), now), Decimal("0.40"))
+        self.assertEqual(refund_percentage(now, now), Decimal("0"))
