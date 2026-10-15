@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
     operations = [
         migrations.CreateModel(name='Station', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('code', models.CharField(max_length=12, unique=True)),
             ('name', models.CharField(max_length=120)),
             ('city', models.CharField(max_length=100)),
@@ -17,13 +17,13 @@ class Migration(migrations.Migration):
             ('is_active', models.BooleanField(default=True)),
         ]),
         migrations.CreateModel(name='Train', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('code', models.CharField(max_length=24, unique=True)),
             ('name', models.CharField(max_length=120)),
             ('is_active', models.BooleanField(default=True)),
         ]),
         migrations.CreateModel(name='Route', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('name', models.CharField(blank=True, max_length=160)),
             ('is_active', models.BooleanField(default=True)),
             ('origin', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='departing_routes', to='core.station')),
@@ -33,19 +33,19 @@ class Migration(migrations.Migration):
             models.CheckConstraint(condition=~Q(origin=F('destination')), name='different_route_stations'),
         ]}),
         migrations.CreateModel(name='Coach', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('code', models.CharField(max_length=12)),
             ('travel_class', models.CharField(choices=[('standard','Standard'),('first','First Class'),('executive','Executive')], max_length=16)),
             ('train', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='coaches', to='core.train')),
         ], options={'constraints': [models.UniqueConstraint(fields=('train', 'code'), name='unique_coach_per_train')]}),
         migrations.CreateModel(name='Seat', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('label', models.CharField(max_length=12)),
             ('is_active', models.BooleanField(default=True)),
             ('coach', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='seats', to='core.coach')),
         ], options={'constraints': [models.UniqueConstraint(fields=('coach', 'label'), name='unique_seat_per_coach')]}),
         migrations.CreateModel(name='Schedule', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('departure_time', models.TimeField()),
             ('arrival_time', models.TimeField()),
             ('operates_monday', models.BooleanField(default=True)),
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
             ('train', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='schedules', to='core.train')),
         ]),
         migrations.CreateModel(name='Fare', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('travel_class', models.CharField(choices=[('standard','Standard'),('first','First Class'),('executive','Executive')], max_length=16)),
             ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
             ('schedule', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='fares', to='core.schedule')),
@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
             models.CheckConstraint(condition=Q(amount__gte=0), name='fare_nonnegative'),
         ]}),
         migrations.CreateModel(name='Booking', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('reference', models.CharField(max_length=32, unique=True)),
             ('travel_date', models.DateField()),
             ('passenger_name', models.CharField(max_length=150)),
@@ -85,12 +85,12 @@ class Migration(migrations.Migration):
             models.CheckConstraint(condition=Q(fare_paid__gte=0), name='booking_fare_nonnegative'),
         ]}),
         migrations.CreateModel(name='Wallet', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('balance', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
             ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rail_wallet', to=settings.AUTH_USER_MODEL)),
         ], options={'constraints': [models.CheckConstraint(condition=Q(balance__gte=0), name='wallet_balance_nonnegative')]}),
         migrations.CreateModel(name='WalletTransaction', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('kind', models.CharField(choices=[('credit','Credit'),('debit','Debit'),('refund','Refund')], max_length=8)),
             ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
             ('balance_after', models.DecimalField(decimal_places=2, max_digits=12)),
@@ -99,7 +99,7 @@ class Migration(migrations.Migration):
             ('wallet', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='transactions', to='core.wallet')),
         ], options={'constraints': [models.CheckConstraint(condition=Q(amount__gt=0), name='wallet_transaction_positive')]}),
         migrations.CreateModel(name='PassengerReport', fields=[
-            ('id', models.BigAutoField(primary_key=True, serialize=False)),
+            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ('subject', models.CharField(max_length=160)),
             ('description', models.TextField()),
             ('status', models.CharField(choices=[('open','Open'),('in_progress','In progress'),('resolved','Resolved')], default='open', max_length=16)),
