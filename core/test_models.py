@@ -50,3 +50,34 @@ class RailInventoryTests(TestCase):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Seat.objects.create(coach=self.coach, label="A1")
+
+    def test_route_cannot_start_and_end_at_same_station(self):
+        from django.core.exceptions import ValidationError
+        route = Route(origin=self.lagos, destination=self.lagos)
+        with self.assertRaises(ValidationError):
+            route.full_clean()
+
+    def test_booking_seat_must_belong_to_scheduled_train(self):
+        from django.core.exceptions import ValidationError
+        other_train = Train.objects.create(code="TR-002", name="Another train")
+        other_coach = Coach.objects.create(train=other_train, code="C1", travel_class="standard")
+        other_seat = Seat.objects.create(coach=other_coach, label="A1")
+        booking = Booking(
+            reference="RF-WRONG-TRAIN", user=self.user1, schedule=self.schedule,
+            travel_date=date(2026, 12, 1), seat=other_seat,
+            passenger_name="Passenger One", fare_paid=Decimal("5000.00"),
+            status="confirmed",
+        )
+        with self.assertRaises(ValidationError):
+            booking.full_clean()
+
+    def test_held_booking_blocks_confirmed_booking(self):
+        self.book(self.user1, "RF-HELD", status="held")
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.book(self.user2, "RF-CONFIRMED")
+
+    def test_expired_booking_frees_seat(self):
+        self.book(self.user1, "RF-EXPIRED", status="expired")
+        booking = self.book(self.user2, "RF-NEW")
+        self.assertEqual(booking.status, "confirmed")
