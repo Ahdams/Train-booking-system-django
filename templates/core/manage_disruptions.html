@@ -1,0 +1,5 @@
+{% extends 'core/account_base.html' %}{% block title %}Journey disruptions{% endblock %}
+{% block content %}<h1>Manage journey disruptions</h1><p>Record a delay or cancellation for a specific travel date. Cancelling prevents new bookings and checkout; paid bookings must be reviewed for refunds.</p>
+{% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
+<section class="account-panel"><h2>Record disruption</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Save disruption</button></form></section>
+<section class="account-panel"><h2>Recent disruptions</h2>{% for item in disruptions %}<div class="account-item"><strong>{{ item.schedule.train.name }} · {{ item.travel_date }}</strong><span>{{ item.schedule.route.origin.city }} → {{ item.schedule.route.destination.city }} · {{ item.get_status_display }}</span>{% if item.revised_departure_time %}<span>Revised departure: {{ item.revised_departure_time }}</span>{% endif %}<p>{{ item.reason }}</p></div>{% empty %}<p>No disruptions recorded.</p>{% endfor %}</section>{% endblock %}
