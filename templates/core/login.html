@@ -1,0 +1,7 @@
+{% extends 'core/account_base.html' %}{% block title %}Sign in{% endblock %}
+{% block content %}<section class="auth-card"><span class="account-kicker">WELCOME BACK</span><h1>Sign in to RailFlow</h1><p>Access your journeys and account.</p>
+<form method="post">{% csrf_token %}{% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+<label for="id_username">Username</label>{{ form.username }}{{ form.username.errors }}
+<label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
+<input type="hidden" name="next" value="{{ next }}"><button class="account-button" type="submit">Sign in →</button></form>
+<p class="auth-footer">New to RailFlow? <a href="{% url 'register' %}">Create an account</a></p></section>{% endblock %}
