@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RailFlow ticket {{ booking.reference }}</title><style>
+body{font-family:Arial,sans-serif;background:#f3f5f7;color:#172334;margin:0;padding:32px}.ticket{max-width:680px;margin:auto;background:white;padding:32px;border:1px solid #d8dce0;border-radius:12px}h1{margin-top:0}.detail{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #ddd;padding:12px 0}.detail strong{text-align:right}.actions{max-width:680px;margin:20px auto}button{padding:12px 20px;cursor:pointer}@media print{body{background:white;padding:0}.ticket{border:0}.actions{display:none}}
+</style></head><body><article class="ticket"><h1>RailFlow · Train ticket</h1><p>Confirmed booking · Reference {{ booking.reference }}</p>
+<div class="detail"><span>Passenger</span><strong>{{ booking.passenger_name }}</strong></div>
+<div class="detail"><span>Journey</span><strong>{{ booking.schedule.route.origin.city }} → {{ booking.schedule.route.destination.city }}</strong></div>
+<div class="detail"><span>Travel date</span><strong>{{ booking.travel_date }}</strong></div>
+<div class="detail"><span>Departure</span><strong>{{ booking.schedule.departure_time|time:"H:i" }} (Nigeria time)</strong></div>
+<div class="detail"><span>Train</span><strong>{{ booking.schedule.train.name }} ({{ booking.schedule.train.code }})</strong></div>
+<div class="detail"><span>Coach / Seat</span><strong>{{ booking.seat.coach.code }} / {{ booking.seat.label }}</strong></div>
+<div class="detail"><span>Class</span><strong>{{ booking.seat.coach.get_travel_class_display }}</strong></div>
+<div class="detail"><span>Fare paid</span><strong>NGN {{ booking.fare_paid|floatformat:2 }}</strong></div>
+<p>Keep your booking reference for verification. This document is only valid while the booking remains confirmed.</p></article>
+<div class="actions"><button onclick="window.print()">Print / Save as PDF</button> <a href="{% url 'my_bookings' %}">Back to bookings</a></div></body></html>
