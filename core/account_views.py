@@ -1,4 +1,5 @@
 from django.contrib.auth import login
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect, render
@@ -13,7 +14,9 @@ def register(request):
         return redirect("dashboard")
     form = PassengerRegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
+        with transaction.atomic():
+            user = form.save()
+            Wallet.objects.create(user=user)
         login(request, user)
         return redirect("dashboard")
     return render(request, "core/register.html", {"form": form})
