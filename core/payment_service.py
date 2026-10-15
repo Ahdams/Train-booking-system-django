@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Booking, Wallet, WalletTransaction
+from .models import Booking, Wallet, WalletTransaction, JourneyDisruption
 from .reservation_service import departure_at, expire_holds
 
 
@@ -20,6 +20,8 @@ def confirm_with_wallet(*, user, booking_id):
             raise ValidationError("This temporary reservation is no longer available.")
         if booking.hold_expires_at is None or booking.hold_expires_at <= now:
             raise ValidationError("Your reservation has expired.")
+        if JourneyDisruption.objects.filter(schedule=booking.schedule, travel_date=booking.travel_date, status=JourneyDisruption.Status.CANCELLED).exists():
+            raise ValidationError("This journey has been cancelled by the operator.")
         if departure_at(booking) <= now:
             raise ValidationError("The train has already departed.")
         if Booking.objects.filter(
