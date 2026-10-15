@@ -26,3 +26,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Deployment must provide a secret key, trusted hosts, and HTTPS configuration.
+if not DEBUG and os.environ.get('DJANGO_PRODUCTION', '').lower() == 'true':
+    if not os.environ.get('DJANGO_SECRET_KEY'):
+        raise RuntimeError('DJANGO_SECRET_KEY must be configured in production')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
