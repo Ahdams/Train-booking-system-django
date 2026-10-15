@@ -1,0 +1,5 @@
+{% extends "core/account_base.html" %}{% block title %}Seat availability{% endblock %}
+{% block content %}<div class="account-heading"><span class="account-kicker">CHOOSE YOUR SEAT</span><h1>{{ schedule.train.name }}</h1><p>{{ schedule.route.origin.city }} → {{ schedule.route.destination.city }} · {{ travel_date }} · {{ schedule.departure_time|time:"H:i" }}</p></div>
+<section class="account-panel"><h2>Seats and fares</h2><p>Availability shown is a snapshot. Seats are not reserved until booking is completed.</p>
+{% for item in seat_rows %}<div class="account-item"><strong>{{ item.seat.coach.code }} · {{ item.seat.label }} · {{ item.seat.coach.get_travel_class_display }}</strong><span>{% if item.available %}Available — ₦{{ item.fare|floatformat:2 }}{% elif item.fare == None %}Fare not configured{% else %}Unavailable{% endif %}</span></div>{% empty %}<p>No seats configured for this train.</p>{% endfor %}</section>
+<p>Seat selection and booking confirmation will be connected in the booking phase.</p>{% endblock %}
