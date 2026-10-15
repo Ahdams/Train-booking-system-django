@@ -3,6 +3,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import ObjectDoesNotExist
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -20,7 +21,7 @@ def reserve(request):
         reserve_seat(user=request.user, schedule_id=int(request.POST["schedule_id"]),
                      seat_id=int(request.POST["seat_id"]), travel_date=travel_date)
         messages.success(request, "Seat reserved for 10 minutes. Cancel it before reserving another.")
-    except (ValidationError, ValueError, KeyError) as exc:
+    except (ValidationError, ValueError, KeyError, ObjectDoesNotExist) as exc:
         messages.error(request, "; ".join(exc.messages) if isinstance(exc, ValidationError) else "Invalid reservation details.")
     return redirect("my_bookings")
 
