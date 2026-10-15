@@ -1,0 +1,5 @@
+{% extends 'core/account_base.html' %}{% block title %}My reports{% endblock %}
+{% block content %}<div class="account-heading"><span class="account-kicker">PASSENGER SUPPORT</span><h1>My reports</h1><p>Report a problem with a journey, ticket or refund.</p></div>
+{% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
+<section class="account-panel"><h2>Submit a report</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Send report</button></form></section>
+<section class="account-panel"><h2>Report history</h2>{% for report in reports %}<div class="account-item"><strong>{{ report.subject }}</strong><span>{{ report.get_status_display }} · {{ report.created_at }}</span><p>{{ report.description }}</p>{% if report.admin_response %}<p><strong>Staff response:</strong> {{ report.admin_response }}</p>{% endif %}</div>{% empty %}<p>No reports yet.</p>{% endfor %}</section>{% endblock %}
