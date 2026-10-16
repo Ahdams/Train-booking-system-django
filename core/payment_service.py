@@ -13,6 +13,10 @@ def confirm_with_wallet(*, user, booking_id):
         get_user_model().objects.select_for_update().get(pk=user.pk)
         now = timezone.now()
         expire_holds(now)
+        # Match the schedule lock taken by operator cancellations and reservations.
+        initial = Booking.objects.only('schedule_id').get(pk=booking_id, user=user)
+        from .models import Schedule
+        Schedule.objects.select_for_update().get(pk=initial.schedule_id)
         booking = Booking.objects.select_for_update().select_related("schedule").filter(
             pk=booking_id, user=user
         ).first()
