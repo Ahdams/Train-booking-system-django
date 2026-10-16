@@ -5,7 +5,10 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from .models import Coach, Fare, JourneyDisruption, Route, Schedule, Seat, Station, Train
+from .models import Booking, Coach, Fare, JourneyDisruption, Route, Schedule, Seat, Station, Train, Wallet, WalletTransaction
+from .payment_service import confirm_with_wallet
+from .reservation_service import departure_at
+from .disruption_service import apply_disruption
 from .reservation_service import reserve_seat
 
 
@@ -48,3 +51,31 @@ class DisruptionTests(TestCase):
         JourneyDisruption.objects.create(schedule=self.schedule, travel_date=self.day, status="cancelled", reason="Maintenance")
         booking = reserve_seat(user=self.user, schedule_id=self.schedule.pk, seat_id=self.seat.pk, travel_date=self.day + timedelta(days=1))
         self.assertEqual(booking.status, "held")
+
+    def test_operator_cancellation_refunds_full_amount_once(self):
+        Wallet.objects.create(user=self.user, balance=Decimal("5000"))
+        booking = reserve_seat(user=self.user, schedule_id=self.schedule.pk, seat_id=self.seat.pk, travel_date=self.day)
+        confirm_with_wallet(user=self.user, booking_id=booking.pk)
+        apply_disruption(schedule=self.schedule, travel_date=self.day, status="cancelled", reason="Maintenance")
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)
+        self.assertEqual(Wallet.objects.get(user=self.user).balance, Decimal("5000"))
+        self.assertEqual(WalletTransaction.objects.filter(booking=booking, kind="refund").count(), 1)
+        apply_disruption(schedule=self.schedule, travel_date=self.day, status="cancelled", reason="Maintenance")
+        self.assertEqual(WalletTransaction.objects.filter(booking=booking, kind="refund").count(), 1)
+        self.assertEqual(Wallet.objects.get(user=self.user).balance, Decimal("5000"))
+
+    def test_delay_changes_effective_departure(self):
+        booking = reserve_seat(user=self.user, schedule_id=self.schedule.pk, seat_id=self.seat.pk, travel_date=self.day)
+        apply_disruption(schedule=self.schedule, travel_date=self.day, status="delayed", reason="Signal issue", revised_departure_time=time(22, 30))
+        self.assertEqual(timezone.localtime(departure_at(booking)).time().replace(tzinfo=None), time(22, 30))
+
+    def test_cancellation_refund_failure_rolls_back(self):
+        booking = reserve_seat(user=self.user, schedule_id=self.schedule.pk, seat_id=self.seat.pk, travel_date=self.day)
+        booking.status = Booking.Status.CONFIRMED
+        booking.save(update_fields=["status"])
+        with self.assertRaisesMessage(ValidationError, "verified payment"):
+            apply_disruption(schedule=self.schedule, travel_date=self.day, status="cancelled", reason="Maintenance")
+        self.assertFalse(JourneyDisruption.objects.filter(schedule=self.schedule, travel_date=self.day).exists())
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CONFIRMED)
