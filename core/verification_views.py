@@ -3,7 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.utils import timezone
 
-from .models import Booking, WalletTransaction
+from .models import Booking, WalletTransaction, JourneyDisruption
 from .reservation_service import departure_at
 
 
@@ -29,6 +29,8 @@ def verify_ticket(request):
                 amount=booking.fare_paid,
             ).exists():
                 verdict = "Ticket is not valid: payment is unverified."
+            elif JourneyDisruption.objects.filter(schedule_id=booking.schedule_id, travel_date=booking.travel_date, status=JourneyDisruption.Status.CANCELLED).exists():
+                verdict = "Ticket is not valid: journey cancelled by operator."
             elif departure_at(booking) <= timezone.now():
                 verdict = "Ticket is for a departed journey."
             else:
