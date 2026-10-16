@@ -1,5 +1,6 @@
 """Staff management of individual dated journeys."""
 from django import forms
+from django.db import transaction
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
@@ -7,7 +8,7 @@ from .disruption_service import apply_disruption
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import JourneyDisruption, Schedule
+from .models import JourneyDisruption, Schedule, StaffAuditEvent
 
 
 class DisruptionForm(forms.ModelForm):
@@ -36,11 +37,17 @@ def manage_disruptions(request):
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         try:
-            apply_disruption(
-                schedule=data["schedule"], travel_date=data["travel_date"],
-                status=data["status"], reason=data["reason"],
-                revised_departure_time=data["revised_departure_time"],
-            )
+            with transaction.atomic():
+                disruption = apply_disruption(
+                    schedule=data["schedule"], travel_date=data["travel_date"],
+                    status=data["status"], reason=data["reason"],
+                    revised_departure_time=data["revised_departure_time"],
+                )
+                StaffAuditEvent.objects.create(
+                    actor=request.user, action="journey_disruption_updated",
+                    target_type="journey_disruption", target_id=disruption.pk,
+                    details=f"Journey {disruption.schedule_id} on {disruption.travel_date}: {disruption.status}",
+                )
         except ValidationError as exc:
             form.add_error(None, exc)
         else:
