@@ -60,8 +60,9 @@ def staff_report_detail(request, report_id):
     form = StaffResponseForm(request.POST or None, instance=report)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
-            previous_status = report.status
-            previous_response = report.admin_response
+            previous = PassengerReport.objects.get(pk=report.pk)
+            previous_status = previous.status
+            previous_response = previous.admin_response
             updated = form.save()
             if updated.status != previous_status or updated.admin_response != previous_response:
                 StaffAuditEvent.objects.create(
