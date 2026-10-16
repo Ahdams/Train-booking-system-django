@@ -1,0 +1,19 @@
+{% extends 'core/account_base.html' %}{% block title %}Operations dashboard{% endblock %}
+{% block content %}
+<div class="account-heading"><span class="account-kicker">STAFF OPERATIONS</span><h1>Operations dashboard</h1><p>Live booking activity, wallet movements, passenger reports and journey disruptions.</p></div>
+<section class="account-panel"><h2>Booking overview</h2><div class="stats-grid">
+<div class="stat"><strong>{{ total_bookings }}</strong><span>All bookings</span></div>
+<div class="stat"><strong>{{ confirmed_bookings }}</strong><span>Confirmed bookings</span></div>
+<div class="stat"><strong>{{ active_holds }}</strong><span>Active seat holds</span></div>
+<div class="stat"><strong>{{ upcoming_confirmed }}</strong><span>Upcoming confirmed journeys</span></div>
+<div class="stat"><strong>{{ active_schedules }}</strong><span>Active schedules</span></div>
+</div></section>
+<section class="account-panel"><h2>Wallet activity · last 30 days</h2><p>Verified wallet debits: <strong>₦{{ wallet_debits_30d|floatformat:2 }}</strong></p><p>Wallet refunds: <strong>₦{{ wallet_refunds_30d|floatformat:2 }}</strong></p><p>These are transaction totals, not external payment-gateway revenue.</p></section>
+<section class="account-panel"><h2>Attention needed</h2><p><strong>{{ open_reports }}</strong> open reports · <strong>{{ in_progress_reports }}</strong> in progress · <strong>{{ upcoming_disruptions }}</strong> upcoming disruptions</p>
+<p><a href="{% url 'staff_reports' %}">Manage reports</a> · <a href="{% url 'manage_disruptions' %}">Manage disruptions</a> · <a href="{% url 'verify_ticket' %}">Verify tickets</a> · <a href="{% url 'admin:index' %}">Django admin</a></p></section>
+<section class="account-panel"><h2>Recent bookings</h2>{% for item in recent_bookings %}<div class="account-item"><strong>{{ item.reference }} · {{ item.get_status_display }}</strong><span>{{ item.user.username }} · {{ item.travel_date }} · {{ item.schedule.route.origin.city }} → {{ item.schedule.route.destination.city }} · ₦{{ item.fare_paid }}</span></div>{% empty %}<p>No bookings yet.</p>{% endfor %}</section>
+<section class="account-panel"><h2>Recent wallet transactions</h2>{% for item in recent_transactions %}<div class="account-item"><strong>{{ item.get_kind_display }} · ₦{{ item.amount }}</strong><span>{{ item.wallet.user.username }} · {{ item.created_at }} · Balance ₦{{ item.balance_after }}</span></div>{% empty %}<p>No wallet transactions.</p>{% endfor %}</section>
+<section class="account-panel"><h2>Recent passenger reports</h2>{% for item in recent_reports %}<div class="account-item"><strong>{{ item.subject }}</strong><span>{{ item.user.username }} · {{ item.get_status_display }}</span><a href="{% url 'staff_report_detail' item.pk %}">Review report</a></div>{% empty %}<p>No reports.</p>{% endfor %}</section>
+<section class="account-panel"><h2>Recent disruptions</h2>{% for item in recent_disruptions %}<div class="account-item"><strong>{{ item.schedule.train.name }} · {{ item.travel_date }}</strong><span>{{ item.get_status_display }} · {{ item.reason }}</span></div>{% empty %}<p>No disruptions.</p>{% endfor %}</section>
+<style>.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.stat{padding:18px;border:1px solid #d9e2e8;border-radius:12px;display:flex;flex-direction:column;gap:8px}.stat strong{font-size:1.65rem}.stat span{font-size:.9rem}</style>
+{% endblock %}
