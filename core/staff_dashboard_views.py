@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum, Q
 from django.shortcuts import render
 from django.utils import timezone
-from .models import Booking, JourneyDisruption, PassengerReport, Schedule, WalletTransaction
+from .models import Booking, JourneyDisruption, PassengerReport, Schedule, WalletTransaction, StaffAuditEvent
 
 
 @staff_member_required
@@ -20,6 +20,7 @@ def staff_dashboard(request):
     transactions = WalletTransaction.objects.all()
     context = {
         "total_bookings": bookings.count(),
+        "recent_audit_events": StaffAuditEvent.objects.select_related("actor")[:15],
         "selected_status": status,
         "booking_statuses": Booking.Status.choices,
         "booking_status_breakdown": list(bookings.values("status").annotate(total=Count("id")).order_by("status")),
