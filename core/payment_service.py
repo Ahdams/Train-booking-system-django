@@ -14,7 +14,9 @@ def confirm_with_wallet(*, user, booking_id):
         now = timezone.now()
         expire_holds(now)
         # Match the schedule lock taken by operator cancellations and reservations.
-        initial = Booking.objects.only('schedule_id').get(pk=booking_id, user=user)
+        initial = Booking.objects.only('schedule_id').filter(pk=booking_id, user=user).first()
+        if initial is None:
+            raise ValidationError("This temporary reservation is no longer available.")
         from .models import Schedule
         Schedule.objects.select_for_update().get(pk=initial.schedule_id)
         booking = Booking.objects.select_for_update().select_related("schedule").filter(
