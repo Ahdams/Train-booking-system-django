@@ -52,7 +52,13 @@ def search_journeys(request):
             cancelled = JourneyDisruption.objects.filter(travel_date=travel_date, status=JourneyDisruption.Status.CANCELLED).values_list('schedule_id', flat=True)
             schedules = schedules.exclude(pk__in=cancelled)
             if travel_date == timezone.localdate():
-                schedules = schedules.filter(departure_time__gt=timezone.localtime().time())
+                # Delays may keep a journey bookable after its original departure.
+                now_time = timezone.localtime().time()
+                delayed_ids = JourneyDisruption.objects.filter(
+                    travel_date=travel_date, status=JourneyDisruption.Status.DELAYED,
+                    revised_departure_time__gt=now_time,
+                ).values_list('schedule_id', flat=True)
+                schedules = schedules.filter(Q(departure_time__gt=now_time) | Q(pk__in=delayed_ids))
 
     return render(request, "core/journey_results.html", {
         "schedules": schedules,
@@ -76,7 +82,9 @@ def available_seats(request, schedule_id):
         raise Http404("This journey has been cancelled.")
     if not getattr(schedule, WEEKDAY_FIELDS[travel_date.weekday()]):
         raise Http404("This train does not run on the selected date.")
-    if travel_date == timezone.localdate() and schedule.departure_time <= timezone.localtime().time():
+    disruption = JourneyDisruption.objects.filter(schedule=schedule, travel_date=travel_date).first()
+    effective_departure = disruption.revised_departure_time if disruption and disruption.status == JourneyDisruption.Status.DELAYED else schedule.departure_time
+    if travel_date == timezone.localdate() and effective_departure <= timezone.localtime().time():
         raise Http404("This train has already departed.")
     reserved_ids = Booking.objects.filter(
         schedule=schedule, travel_date=travel_date,
@@ -96,4 +104,5 @@ def available_seats(request, schedule_id):
             row["available"] = False
     return render(request, "core/available_seats.html", {
         "schedule": schedule, "travel_date": travel_date, "seat_rows": seat_rows,
+        "disruption": disruption, "effective_departure": effective_departure,
     })
