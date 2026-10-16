@@ -31,19 +31,19 @@ def notifications(request):
             alerts.append({
                 "level": "urgent", "title": "Journey cancelled",
                 "message": f"{route} on {booking.travel_date}: {disruption.reason}. Confirmed wallet payments are refunded in full by the operator.",
-                "booking": booking, "key": f"hold:{booking.pk}", "key": f"delay:{booking.pk}:{disruption.updated_at.isoformat()}", "key": f"cancel:{booking.pk}:{disruption.updated_at.isoformat()}",
+                "booking": booking, "key": f"cancel:{booking.pk}:{disruption.updated_at.isoformat()}",
             })
         elif disruption and disruption.status == JourneyDisruption.Status.DELAYED and booking.status in (Booking.Status.HELD, Booking.Status.CONFIRMED):
             alerts.append({
                 "level": "warning", "title": "Departure time changed",
                 "message": f"{route} on {booking.travel_date} now departs at {disruption.revised_departure_time.strftime('%H:%M')} (Nigeria time). {disruption.reason}",
-                "booking": booking,
+                "booking": booking, "key": f"delay:{booking.pk}:{disruption.updated_at.isoformat()}",
             })
         elif booking.status == Booking.Status.HELD and booking.hold_expires_at and booking.hold_expires_at > timezone.now():
             alerts.append({
                 "level": "info", "title": "Seat reservation awaiting payment",
                 "message": f"{route} on {booking.travel_date}: complete wallet checkout before your hold expires.",
-                "booking": booking,
+                "booking": booking, "key": f"hold:{booking.pk}",
             })
     for report in PassengerReport.objects.filter(user=request.user).exclude(status=PassengerReport.Status.OPEN).order_by("-updated_at")[:20]:
         message = f"Your report '{report.subject}' is {report.get_status_display().lower()}."
