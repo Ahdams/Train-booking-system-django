@@ -37,3 +37,16 @@ class StaffDashboardTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.context["wallet_debits_30d"], Decimal("20"))
         self.assertEqual(response.context["wallet_refunds_30d"], Decimal("10"))
+
+    def test_invalid_status_filter_is_ignored(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url, {"status": "not-a-status"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_status"], "")
+
+    def test_valid_status_filter_is_accepted(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url, {"status": Booking.Status.CONFIRMED})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_status"], Booking.Status.CONFIRMED)
+        self.assertContains(response, "Booking status breakdown")
