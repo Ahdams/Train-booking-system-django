@@ -81,3 +81,12 @@ class NotificationTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertNotContains(response, "Dispute update")
+
+    def test_read_receipt_for_dispute(self):
+        report = PassengerReport.objects.create(user=self.user, subject="Refund", description="Question", status=PassengerReport.Status.RESOLVED)
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.context["unread_count"], 1)
+        key = response.context["alerts"][0]["key"]
+        self.assertEqual(self.client.post(self.url, {"alert_key": key}).status_code, 302)
+        self.assertEqual(self.client.get(self.url).context["unread_count"], 0)
