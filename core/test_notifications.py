@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from .models import Booking, Coach, JourneyDisruption, Route, Schedule, Seat, Station, Train
+from .models import Booking, Coach, JourneyDisruption, Route, Schedule, Seat, Station, Train, PassengerReport
 
 
 class NotificationTests(TestCase):
@@ -55,3 +55,29 @@ class NotificationTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "Journey cancelled")
         self.assertContains(response, "Safety inspection")
+
+    def test_dispute_resolution_and_staff_response_visible_to_owner(self):
+        PassengerReport.objects.create(user=self.user, subject="Refund enquiry",
+            description="Refund missing", status=PassengerReport.Status.RESOLVED,
+            admin_response="Refund processed to your wallet.")
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertContains(response, "Dispute update")
+        self.assertContains(response, "Refund processed to your wallet.")
+        self.assertContains(response, "View my dispute")
+
+    def test_other_passengers_disputes_remain_private(self):
+        PassengerReport.objects.create(user=self.other, subject="Private dispute",
+            description="Confidential issue", status=PassengerReport.Status.IN_PROGRESS,
+            admin_response="Private staff reply")
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "Private dispute")
+        self.assertNotContains(response, "Private staff reply")
+
+    def test_open_dispute_does_not_create_update_alert(self):
+        PassengerReport.objects.create(user=self.user, subject="New report",
+            description="Awaiting review", status=PassengerReport.Status.OPEN)
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "Dispute update")
