@@ -210,3 +210,12 @@ class JourneyDisruption(models.Model):
             raise ValidationError("Cancelled journeys cannot have a revised departure time.")
         if not self.reason.strip():
             raise ValidationError("Provide a reason for the disruption.")
+
+
+class NotificationRead(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    alert_key = models.CharField(max_length=180)
+    read_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (("user", "alert_key"),)
