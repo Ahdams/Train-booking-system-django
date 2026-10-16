@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 
-from .models import Booking, JourneyDisruption
+from .models import Booking, JourneyDisruption, PassengerReport
 
 
 @login_required
@@ -45,6 +45,14 @@ def notifications(request):
                 "message": f"{route} on {booking.travel_date}: complete wallet checkout before your hold expires.",
                 "booking": booking,
             })
+    for report in PassengerReport.objects.filter(user=request.user).exclude(status=PassengerReport.Status.OPEN).order_by("-updated_at")[:20]:
+        message = f"Your report '{report.subject}' is {report.get_status_display().lower()}."
+        if report.admin_response:
+            message += f" Staff response: {report.admin_response}"
+        alerts.append({
+            "level": "info", "title": "Dispute update", "message": message,
+            "report": report,
+        })
     response = render(request, "core/notifications.html", {"alerts": alerts})
     response["Cache-Control"] = "private, no-store"
     return response
