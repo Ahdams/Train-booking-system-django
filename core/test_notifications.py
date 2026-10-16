@@ -33,7 +33,7 @@ class NotificationTests(TestCase):
         self.booking(self.other)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
-        self.assertContains(response, "No active journey alerts")
+        self.assertContains(response, "No active journey or dispute alerts")
         self.assertNotContains(response, "ALERT-A")
 
     def test_delayed_journey_alert(self):
