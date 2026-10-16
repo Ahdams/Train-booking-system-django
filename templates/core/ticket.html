@@ -5,7 +5,8 @@ body{font-family:Arial,sans-serif;background:#f3f5f7;color:#172334;margin:0;padd
 <div class="detail"><span>Passenger</span><strong>{{ booking.passenger_name }}</strong></div>
 <div class="detail"><span>Journey</span><strong>{{ booking.schedule.route.origin.city }} → {{ booking.schedule.route.destination.city }}</strong></div>
 <div class="detail"><span>Travel date</span><strong>{{ booking.travel_date }}</strong></div>
-<div class="detail"><span>Departure</span><strong>{{ booking.schedule.departure_time|time:"H:i" }} (Nigeria time)</strong></div>
+<div class="detail"><span>Scheduled departure</span><strong>{{ booking.schedule.departure_time|time:"H:i" }} (Nigeria time)</strong></div>
+{% if disruption and disruption.status == "delayed" %}<p role="status"><strong>DELAYED:</strong> Revised departure {{ disruption.revised_departure_time|time:"H:i" }} (Nigeria time). {{ disruption.reason }}</p>{% endif %}
 <div class="detail"><span>Train</span><strong>{{ booking.schedule.train.name }} ({{ booking.schedule.train.code }})</strong></div>
 <div class="detail"><span>Coach / Seat</span><strong>{{ booking.seat.coach.code }} / {{ booking.seat.label }}</strong></div>
 <div class="detail"><span>Class</span><strong>{{ booking.seat.coach.get_travel_class_display }}</strong></div>
