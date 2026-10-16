@@ -20,8 +20,10 @@ def expire_holds(now=None):
 
 
 def departure_at(booking):
+    disruption = JourneyDisruption.objects.filter(schedule_id=booking.schedule_id, travel_date=booking.travel_date, status=JourneyDisruption.Status.DELAYED).first()
+    departure_time = disruption.revised_departure_time if disruption else booking.schedule.departure_time
     return timezone.make_aware(
-        datetime.combine(booking.travel_date, booking.schedule.departure_time),
+        datetime.combine(booking.travel_date, departure_time),
         timezone.get_current_timezone(),
     )
 
@@ -46,7 +48,7 @@ def reserve_seat(*, user, schedule_id, seat_id, travel_date):
             raise ValidationError("Your confirmed journey has not departed. Cancel it before booking another seat.")
         if Booking.objects.filter(user=user, status=Booking.Status.HELD).exists():
             raise ValidationError("Cancel your current reservation before reserving another seat.")
-        schedule = Schedule.objects.select_related("route", "train").get(pk=schedule_id)
+        schedule = Schedule.objects.select_for_update().select_related("route", "train").get(pk=schedule_id)
         seat = Seat.objects.select_related("coach").get(pk=seat_id)
         if not (schedule.is_active and schedule.train.is_active and schedule.route.is_active
                 and schedule.route.origin.is_active and schedule.route.destination.is_active and seat.is_active):
@@ -55,7 +57,9 @@ def reserve_seat(*, user, schedule_id, seat_id, travel_date):
             raise ValidationError("This seat belongs to a different train.")
         if travel_date < timezone.localdate():
             raise ValidationError("Cannot reserve a past journey.")
-        if travel_date == timezone.localdate() and schedule.departure_time <= timezone.localtime().time():
+        disruption = JourneyDisruption.objects.filter(schedule=schedule, travel_date=travel_date).first()
+        effective_time = disruption.revised_departure_time if disruption and disruption.status == JourneyDisruption.Status.DELAYED else schedule.departure_time
+        if travel_date == timezone.localdate() and effective_time <= timezone.localtime().time():
             raise ValidationError("This train has already departed.")
         weekday = ("operates_monday", "operates_tuesday", "operates_wednesday",
                    "operates_thursday", "operates_friday", "operates_saturday", "operates_sunday")[travel_date.weekday()]
