@@ -2,7 +2,8 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db import transaction
+from django.core.exceptions import ValidationError
+from .disruption_service import apply_disruption
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -34,17 +35,17 @@ def manage_disruptions(request):
     form = DisruptionForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
-        with transaction.atomic():
-            JourneyDisruption.objects.update_or_create(
+        try:
+            apply_disruption(
                 schedule=data["schedule"], travel_date=data["travel_date"],
-                defaults={
-                    "status": data["status"],
-                    "revised_departure_time": data["revised_departure_time"],
-                    "reason": data["reason"],
-                },
+                status=data["status"], reason=data["reason"],
+                revised_departure_time=data["revised_departure_time"],
             )
-        messages.success(request, "Journey disruption saved. Existing paid bookings require staff review before refunds.")
-        return redirect("manage_disruptions")
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            messages.success(request, "Journey updated. Operator cancellations refund confirmed wallet payments in full.")
+            return redirect("manage_disruptions")
     disruptions = JourneyDisruption.objects.select_related(
         "schedule__train", "schedule__route__origin", "schedule__route__destination"
     ).order_by("-travel_date", "-updated_at")[:100]
