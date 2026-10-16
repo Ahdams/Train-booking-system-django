@@ -4,10 +4,10 @@ No external notification provider or extra database table is required.
 """
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils import timezone
 
-from .models import Booking, JourneyDisruption, PassengerReport
+from .models import Booking, JourneyDisruption, PassengerReport, NotificationRead
 
 
 @login_required
@@ -31,7 +31,7 @@ def notifications(request):
             alerts.append({
                 "level": "urgent", "title": "Journey cancelled",
                 "message": f"{route} on {booking.travel_date}: {disruption.reason}. Confirmed wallet payments are refunded in full by the operator.",
-                "booking": booking,
+                "booking": booking, "key": f"hold:{booking.pk}", "key": f"delay:{booking.pk}:{disruption.updated_at.isoformat()}", "key": f"cancel:{booking.pk}:{disruption.updated_at.isoformat()}",
             })
         elif disruption and disruption.status == JourneyDisruption.Status.DELAYED and booking.status in (Booking.Status.HELD, Booking.Status.CONFIRMED):
             alerts.append({
@@ -51,8 +51,17 @@ def notifications(request):
             message += f" Staff response: {report.admin_response}"
         alerts.append({
             "level": "info", "title": "Dispute update", "message": message,
-            "report": report,
+            "report": report, "key": f"report:{report.pk}:{report.updated_at.isoformat()}",
         })
-    response = render(request, "core/notifications.html", {"alerts": alerts})
+    keys = {alert["key"] for alert in alerts}
+    if request.method == "POST":
+        key = request.POST.get("alert_key", "")
+        if key in keys:
+            NotificationRead.objects.get_or_create(user=request.user, alert_key=key)
+        return redirect("notifications")
+    read_keys = set(NotificationRead.objects.filter(user=request.user, alert_key__in=keys).values_list("alert_key", flat=True))
+    for alert in alerts:
+        alert["is_read"] = alert["key"] in read_keys
+    response = render(request, "core/notifications.html", {"alerts": alerts, "unread_count": len(keys - read_keys)})
     response["Cache-Control"] = "private, no-store"
     return response
