@@ -7,7 +7,7 @@ from django.db import transaction
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Booking, PassengerReport
+from .models import Booking, PassengerReport, StaffAuditEvent
 
 
 class PassengerReportForm(forms.ModelForm):
@@ -60,7 +60,14 @@ def staff_report_detail(request, report_id):
     form = StaffResponseForm(request.POST or None, instance=report)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
-            form.save()
+            previous_status = report.status
+            previous_response = report.admin_response
+            updated = form.save()
+            if updated.status != previous_status or updated.admin_response != previous_response:
+                StaffAuditEvent.objects.create(
+                    actor=request.user, action="report_updated", target_type="passenger_report",
+                    target_id=updated.pk, details=f"Status: {previous_status} -> {updated.status}",
+                )
         messages.success(request, "Report updated.")
         return redirect("staff_reports")
     return render(request, "core/staff_report_detail.html", {"report": report, "form": form})
