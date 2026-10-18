@@ -6,7 +6,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
 from .forms import PassengerRegistrationForm
-from .models import Booking, PassengerReport, Wallet, WalletTransaction
+from .models import Booking, PassengerReport, Wallet, WalletTransaction, IdentityReview
 from .reservation_service import expire_holds
 
 
@@ -44,6 +44,7 @@ def dashboard(request):
         "bookings": bookings,
         "reports": reports,
         "wallet_balance": wallet.balance if wallet else 0,
+        "identity_review": IdentityReview.objects.filter(user=request.user).first(),
     })
 
 
