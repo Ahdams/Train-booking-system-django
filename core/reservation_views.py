@@ -8,6 +8,7 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from .models import IdentityReview
 from .reservation_service import reserve_seat
 from .cancellation_service import cancel_booking
 
@@ -16,6 +17,9 @@ from .cancellation_service import cancel_booking
 def reserve(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+    if not IdentityReview.objects.filter(user=request.user, status=IdentityReview.Status.APPROVED).exists():
+        messages.error(request, "Document review approval is required before booking.")
+        return redirect("identity_submit")
     try:
         travel_date = date.fromisoformat(request.POST.get("date", ""))
         reserve_seat(user=request.user, schedule_id=int(request.POST["schedule_id"]),
