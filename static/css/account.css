@@ -25,3 +25,5 @@ html,body{max-width:100%;overflow-x:clip}
  .account-panel{padding:18px}
  .account-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+@media(max-width:1200px){.nav .menu-toggle{display:flex;order:2;margin-left:auto}.nav #primary-nav{display:none!important;order:5;flex:1 0 100%;width:100%;flex-direction:column;align-items:stretch;gap:0}.nav #primary-nav.is-open{display:flex!important}.nav #primary-nav a{display:block;padding:12px 10px;white-space:normal}}
