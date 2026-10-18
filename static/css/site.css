@@ -4,7 +4,7 @@
 .menu-toggle{display:none;width:44px;height:44px;padding:11px;border:1px solid #bcc9c2;border-radius:10px;background:transparent;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px}
 .menu-toggle span{display:block;width:21px;height:2px;background:var(--navy);border-radius:2px}
 .menu-toggle:focus-visible,.nav a:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
-@media(max-width:900px){
+@media(max-width:1200px){
  .nav{height:auto;min-height:74px;display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding-top:12px;padding-bottom:12px}
  .menu-toggle{display:flex;order:2;margin-left:auto}
  .nav nav,.nav #primary-nav{display:none!important;order:5;flex:1 0 100%;width:100%;padding:12px 0 4px;border-top:1px solid #dce5de;flex-direction:column;align-items:stretch;gap:0}
