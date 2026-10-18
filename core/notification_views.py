@@ -2,12 +2,14 @@
 
 No external notification provider or extra database table is required.
 """
+from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 
-from .models import Booking, JourneyDisruption, PassengerReport, NotificationRead
+from .reservation_service import departure_at
+from .models import Booking, JourneyDisruption, PassengerReport, NotificationRead, IdentityReview
 
 
 @login_required
@@ -44,6 +46,33 @@ def notifications(request):
                 "level": "info", "title": "Seat reservation awaiting payment",
                 "message": f"{route} on {booking.travel_date}: complete wallet checkout before your hold expires.",
                 "booking": booking, "key": f"hold:{booking.pk}",
+            })
+    # Identity review decisions are private and versioned by review timestamp.
+    review = IdentityReview.objects.filter(user=request.user).first()
+    if review and review.reviewed_at and review.status != IdentityReview.Status.PENDING:
+        message = f"Your identity document review is {review.get_status_display().lower()}."
+        if review.review_note:
+            message += f" Staff note: {review.review_note}"
+        alerts.append({
+            "level": "info", "title": "Identity document review update",
+            "message": message, "identity": True,
+            "key": f"identity:{review.pk}:{review.reviewed_at.isoformat()}",
+        })
+    # A 30-minute reminder is visible only while the journey is still upcoming.
+    now = timezone.now()
+    for booking in bookings:
+        if booking.status != Booking.Status.CONFIRMED:
+            continue
+        disruption = disruptions.get((booking.schedule_id, booking.travel_date))
+        if disruption and disruption.status == JourneyDisruption.Status.CANCELLED:
+            continue
+        departure = departure_at(booking)
+        if now <= departure <= now + timedelta(minutes=30):
+            route = f"{booking.schedule.route.origin.city} → {booking.schedule.route.destination.city}"
+            alerts.append({
+                "level": "warning", "title": "Your train departs soon",
+                "message": f"{route} departs at {timezone.localtime(departure).strftime('%H:%M')} (Nigeria time). Please proceed to the station.",
+                "booking": booking, "key": f"departure:{booking.pk}:{departure.isoformat()}",
             })
     for report in PassengerReport.objects.filter(user=request.user).exclude(status=PassengerReport.Status.OPEN).order_by("-updated_at")[:20]:
         message = f"Your report '{report.subject}' is {report.get_status_display().lower()}."
