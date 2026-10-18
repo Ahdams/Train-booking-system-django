@@ -36,3 +36,6 @@ if not DEBUG and os.environ.get('DJANGO_PRODUCTION', '').lower() == 'true':
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# Identity images are private: no public MEDIA_URL route is configured.
+MEDIA_ROOT = BASE_DIR / 'private_uploads'
