@@ -1,0 +1,11 @@
+{% extends 'core/account_base.html' %}{% block title %}Identity review{% endblock %}
+{% block content %}<div class="account-heading"><span class="account-kicker">ACCOUNT IDENTITY</span><h1>Manual document review</h1><p>Staff compare your submitted NIN details with your uploaded NIN document. This is not NIMC verification.</p></div>
+<section class="auth-card"><h2>Status: {% if review %}{{ review.get_status_display }}{% else %}Not submitted{% endif %}</h2>
+{% if review %}<p>NIN ending in ••••{{ review.nin_last_four }}</p>{% if review.review_note %}<p>Staff response: {{ review.review_note }}</p>{% endif %}{% endif %}
+{% if not review or review.status == 'rejected' or review.status == 'correction' %}
+<p>Only upload your own document. For project demonstrations, use fictional test details. Files are visible to authorized staff only.</p>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<label for="nin">11-digit NIN</label><input id="nin" name="nin" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" autocomplete="off" required>
+<label for="document">NIN document photo (JPG or PNG, maximum 2 MB)</label><input id="document" type="file" name="document" accept="image/jpeg,image/png" required>
+<button class="account-button" type="submit">Submit for review</button></form>{% endif %}</section>
+{% endblock %}
