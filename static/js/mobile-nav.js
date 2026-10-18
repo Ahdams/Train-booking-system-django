@@ -18,5 +18,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', event => {
     if (!nav.contains(event.target) && !toggle.contains(event.target)) close();
   });
-  window.matchMedia('(min-width: 901px)').addEventListener('change', close);
+  window.matchMedia('(min-width: 1201px)').addEventListener('change', close);
 });
