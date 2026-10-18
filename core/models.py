@@ -231,3 +231,22 @@ class StaffAuditEvent(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class IdentityReview(models.Model):
+    """Manual document review; never represents NIMC confirmation."""
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        APPROVED = "approved", "Document reviewed"
+        REJECTED = "rejected", "Rejected"
+        CORRECTION = "correction", "Correction requested"
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="identity_review")
+    nin_digest = models.CharField(max_length=64, unique=True)
+    nin_last_four = models.CharField(max_length=4)
+    document = models.FileField(upload_to="identity_documents/")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    review_note = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="identity_decisions")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
