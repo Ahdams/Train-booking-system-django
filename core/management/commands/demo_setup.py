@@ -44,6 +44,18 @@ class Command(BaseCommand):
             coach, _ = Coach.objects.get_or_create(train=train, code="A", defaults={"travel_class": Coach.TravelClass.STANDARD})
             for n in range(1, 13):
                 Seat.objects.get_or_create(coach=coach, label=str(n))
+            # Premium demo inventory is fictional; no real private cabin is implied.
+            for code, travel_class, count in (
+                ("B", Coach.TravelClass.FIRST, 8),
+                ("C", Coach.TravelClass.EXECUTIVE, 4),
+            ):
+                premium_coach, _ = Coach.objects.get_or_create(
+                    train=train, code=code, defaults={"travel_class": travel_class}
+                )
+                for n in range(1, count + 1):
+                    Seat.objects.get_or_create(coach=premium_coach, label=str(n))
             schedule, _ = Schedule.objects.get_or_create(route=route, train=train, departure_time=time(9, 0), arrival_time=time(11, 30))
             Fare.objects.get_or_create(schedule=schedule, travel_class=Coach.TravelClass.STANDARD, defaults={"amount": Decimal("5000.00")})
+            Fare.objects.get_or_create(schedule=schedule, travel_class=Coach.TravelClass.FIRST, defaults={"amount": Decimal("8500.00")})
+            Fare.objects.get_or_create(schedule=schedule, travel_class=Coach.TravelClass.EXECUTIVE, defaults={"amount": Decimal("12000.00")})
         self.stdout.write(self.style.SUCCESS(f"Demo route ready. Credited NGN {amount} to {username}. Balance: NGN {wallet.balance}."))
