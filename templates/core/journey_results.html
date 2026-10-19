@@ -1,10 +1,11 @@
 {% extends "core/account_base.html" %}{% block title %}Find trains{% endblock %}
 {% block content %}
+<div class="journey-results-shell">
 <div class="account-heading"><span class="account-kicker">FIND YOUR JOURNEY</span><h1>Available trains</h1><p>{% if travel_date %}Departures for {{ travel_date }}{% else %}Choose a train, check its fares, and select your departure date here to continue booking.{% endif %}</p></div>
 {% for error in errors %}<p role="alert">{{ error }}</p>{% endfor %}
-<section class="account-panel">
+<section class="journey-results-list" aria-label="Available train services">
 {% for schedule in schedules %}
-<div class="account-item journey-result">
+<article class="account-panel journey-result">
 <strong>{{ schedule.train.name }} ({{ schedule.train.code }})</strong>
 <span>{{ schedule.route.origin.city }} → {{ schedule.route.destination.city }} · {{ schedule.departure_time|time:"H:i" }} – {{ schedule.arrival_time|time:"H:i" }}</span>
 <div class="journey-fares" aria-label="Available travel classes and fares">
@@ -19,13 +20,15 @@
 <button type="submit" class="account-button">Choose seats →</button>
 </form>
 {% endif %}
-</div>
+</article>
 {% empty %}{% if not errors %}<p>No active trains serve this route{% if travel_date %} on the selected date{% endif %}.</p>{% endif %}{% endfor %}
 </section>
-<p><a href="{% url 'home' %}#search">← Change your search</a></p>
+<p class="journey-back"><a href="{% url 'home' %}#search">← Change your search</a></p>
+</div>
 <style>
+.journey-results-shell{width:min(100%,760px);margin:0 auto;padding:10px 0 35px}.journey-results-shell>.account-heading{text-align:center;margin-bottom:28px}.journey-results-shell>.account-heading h1{font-size:clamp(30px,4vw,42px)}.journey-results-list{display:flex;flex-direction:column;gap:18px}.journey-results-list>.journey-result{padding:24px 26px;box-shadow:0 8px 28px rgba(16,44,54,.045)}.journey-back{text-align:center;margin-top:24px}.journey-back a{color:#185d52;font-weight:700}.journey-results-list .journey-result>strong{font-size:17px}.journey-results-list .journey-result>span{font-size:13px}
 .journey-result{padding:20px 0;gap:12px}.journey-fares{display:flex;gap:9px;flex-wrap:wrap;margin:6px 0}.journey-fare{border:1px solid #d7e6dd;background:#f1f8f3;border-radius:9px;padding:9px 12px;font-size:13px;color:#31574b}
 .journey-date-form{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:10px}.journey-date-field{display:flex;flex-direction:column;gap:6px;flex:0 1 230px;max-width:100%}.journey-date-field label{font-size:13px;font-weight:700}.journey-date-form .journey-date-field input{display:block;width:230px;max-width:100%;min-height:43px;box-sizing:border-box;border:1px solid #ceddd4;border-radius:9px;padding:10px 12px;font:inherit}.journey-date-form .account-button{min-height:43px;margin:0;padding:10px 18px}
-@media(max-width:480px){.journey-date-field{flex:1 1 100%}.journey-date-form .journey-date-field input{width:100%}.journey-date-form .account-button{width:100%}}
+@media(max-width:480px){.journey-results-shell{padding-top:0}.journey-results-list>.journey-result{padding:18px}.journey-results-shell>.account-heading{text-align:left}.journey-date-field{flex:1 1 100%}.journey-date-form .journey-date-field input{width:100%}.journey-date-form .account-button{width:100%}}
 </style>
 {% endblock %}
