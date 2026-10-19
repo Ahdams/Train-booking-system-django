@@ -47,7 +47,7 @@ def search_journeys(request):
         )
         schedules = Schedule.objects.filter(
             route__in=routes, is_active=True, train__is_active=True
-        ).select_related("route__origin", "route__destination", "train").order_by("departure_time")
+        ).select_related("route__origin", "route__destination", "train").prefetch_related("fares").order_by("departure_time")
         if travel_date:
             schedules = schedules.filter(**{WEEKDAY_FIELDS[travel_date.weekday()]: True})
             cancelled = JourneyDisruption.objects.filter(travel_date=travel_date, status=JourneyDisruption.Status.CANCELLED).values_list('schedule_id', flat=True)
@@ -67,6 +67,7 @@ def search_journeys(request):
         "errors": errors,
         "origin": origin,
         "destination": destination,
+        "today": timezone.localdate(),
     })
 
 
