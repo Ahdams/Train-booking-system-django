@@ -75,3 +75,22 @@ class JourneyTests(TestCase):
         Booking.objects.filter(reference="TEST-HELD").update(hold_expires_at=timezone.now() - timedelta(minutes=1))
         self.assertContains(self.client.get(url), "seat-choice")
         self.assertNotContains(self.client.get(url), "seat-unavailable")
+
+    def test_numeric_seats_render_in_natural_order(self):
+        coach = self.seat.coach
+        for label in ("2", "10", "11", "3"):
+            Seat.objects.create(coach=coach, label=label)
+        url = reverse("available_seats", args=[self.schedule.pk]) + "?date=" + self.day.isoformat()
+        html = self.client.get(url).content.decode()
+        positions = [html.index('data-label="' + label + '"') for label in ("1", "2", "3", "10", "11")]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_premium_coaches_show_class_selectors_and_fares(self):
+        coach = Coach.objects.create(train=self.train, code="B", travel_class=Coach.TravelClass.FIRST)
+        Seat.objects.create(coach=coach, label="1")
+        Fare.objects.create(schedule=self.schedule, travel_class=Coach.TravelClass.FIRST, amount=Decimal("8500.00"))
+        url = reverse("available_seats", args=[self.schedule.pk]) + "?date=" + self.day.isoformat()
+        response = self.client.get(url)
+        self.assertContains(response, 'data-class-filter="first"')
+        self.assertContains(response, 'data-coach-class="first"')
+        self.assertContains(response, 'data-fare="8500.00"')
