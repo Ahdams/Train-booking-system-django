@@ -1,5 +1,29 @@
 {% extends "core/account_base.html" %}{% block title %}Find trains{% endblock %}
-{% block content %}<div class="account-heading"><span class="account-kicker">FIND YOUR JOURNEY</span><h1>Available trains</h1><p>{% if travel_date %}Departures for {{ travel_date }}{% else %}Recurring departures — choose a date to see available seats{% endif %}</p></div>
+{% block content %}
+<div class="account-heading"><span class="account-kicker">FIND YOUR JOURNEY</span><h1>Available trains</h1><p>{% if travel_date %}Departures for {{ travel_date }}{% else %}Choose a train, check its fares, and select your departure date here to continue booking.{% endif %}</p></div>
 {% for error in errors %}<p role="alert">{{ error }}</p>{% endfor %}
-<section class="account-panel">{% for schedule in schedules %}<div class="account-item"><strong>{{ schedule.train.name }} ({{ schedule.train.code }})</strong><span>{{ schedule.route.origin.city }} → {{ schedule.route.destination.city }} · {{ schedule.departure_time|time:"H:i" }} – {{ schedule.arrival_time|time:"H:i" }}</span>{% if travel_date %}<a href="{% url 'available_seats' schedule.id %}?date={{ travel_date|date:'Y-m-d' }}">View seats and fares →</a>{% else %}<span>Select a departure date on the home page to see seats.</span>{% endif %}</div>{% empty %}{% if not errors %}<p>No active trains serve this route{% if travel_date %} on the selected date{% endif %}.</p>{% endif %}{% endfor %}</section>
-<p><a href="{% url 'home' %}#search">← Change your search</a></p>{% endblock %}
+<section class="account-panel">
+{% for schedule in schedules %}
+<div class="account-item journey-result">
+<strong>{{ schedule.train.name }} ({{ schedule.train.code }})</strong>
+<span>{{ schedule.route.origin.city }} → {{ schedule.route.destination.city }} · {{ schedule.departure_time|time:"H:i" }} – {{ schedule.arrival_time|time:"H:i" }}</span>
+<div class="journey-fares" aria-label="Available travel classes and fares">
+{% for fare in schedule.fares.all %}<span class="journey-fare"><strong>{{ fare.get_travel_class_display }}</strong> · ₦{{ fare.amount|floatformat:2 }}</span>{% empty %}<span>No fares configured for this service.</span>{% endfor %}
+</div>
+{% if travel_date %}
+<a href="{% url 'available_seats' schedule.id %}?date={{ travel_date|date:'Y-m-d' }}">Choose seats →</a>
+{% else %}
+<form method="get" action="{% url 'available_seats' schedule.id %}" class="journey-date-form">
+<label for="departure-date-{{ schedule.id }}">Travel date</label>
+<input type="date" id="departure-date-{{ schedule.id }}" name="date" min="{{ today|date:'Y-m-d' }}" required>
+<button type="submit" class="account-button">Choose seats →</button>
+</form>
+{% endif %}
+</div>
+{% empty %}{% if not errors %}<p>No active trains serve this route{% if travel_date %} on the selected date{% endif %}.</p>{% endif %}{% endfor %}
+</section>
+<p><a href="{% url 'home' %}#search">← Change your search</a></p>
+<style>
+.journey-result{padding:20px 0;gap:12px}.journey-fares{display:flex;gap:9px;flex-wrap:wrap;margin:6px 0}.journey-fare{border:1px solid #d7e6dd;background:#f1f8f3;border-radius:9px;padding:9px 12px;font-size:13px;color:#31574b}.journey-date-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-top:8px}.journey-date-form label{font-size:13px;font-weight:700}.journey-date-form input{border:1px solid #ceddd4;border-radius:9px;padding:11px 12px;font:inherit;min-height:43px}.journey-date-form .account-button{min-height:43px}@media(max-width:600px){.journey-date-form{align-items:stretch;flex-direction:column}.journey-date-form input,.journey-date-form button{width:100%}}
+</style>
+{% endblock %}
