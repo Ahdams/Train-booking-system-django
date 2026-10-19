@@ -1,5 +1,6 @@
 """Route-specific train discovery and dated seat availability."""
 from datetime import date
+import re
 
 from django.db.models import Q
 from django.http import Http404
@@ -95,6 +96,11 @@ def available_seats(request, schedule_id):
     seats = Seat.objects.filter(
         coach__train=schedule.train, coach__train__is_active=True, is_active=True
     ).select_related("coach").order_by("coach__code", "label")
+    # Natural order keeps numeric labels 1, 2, 3 ... 12 rather than 1, 10, 11, 12, 2.
+    seats = sorted(seats, key=lambda seat: (
+        seat.coach.code.casefold(),
+        [(0, int(part)) if part.isdigit() else (1, part.casefold()) for part in re.split(r"(\\d+)", seat.label)],
+    ))
     reserved_ids = set(reserved_ids)
     seat_rows = [{"seat": seat, "available": seat.id not in reserved_ids} for seat in seats]
     fares = {fare.travel_class: fare.amount for fare in schedule.fares.all()}
