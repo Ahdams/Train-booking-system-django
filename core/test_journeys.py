@@ -71,6 +71,7 @@ class JourneyTests(TestCase):
             fare_paid=Decimal("2500"), status="held",
             hold_expires_at=timezone.now() + timedelta(minutes=10))
         url = reverse("available_seats", args=[self.schedule.pk]) + "?date=" + self.day.isoformat()
-        self.assertContains(self.client.get(url), "Unavailable")
+        self.assertContains(self.client.get(url), "seat-unavailable")
         Booking.objects.filter(reference="TEST-HELD").update(hold_expires_at=timezone.now() - timedelta(minutes=1))
-        self.assertContains(self.client.get(url), "Available —")
+        self.assertContains(self.client.get(url), "seat-choice")
+        self.assertNotContains(self.client.get(url), "seat-unavailable")
