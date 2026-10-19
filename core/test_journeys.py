@@ -94,3 +94,21 @@ class JourneyTests(TestCase):
         self.assertContains(response, 'data-class-filter="first"')
         self.assertContains(response, 'data-coach-class="first"')
         self.assertContains(response, 'data-fare="8500.00"')
+
+    def test_search_without_date_shows_fare_and_direct_booking_date_form(self):
+        response = self.search()
+        self.assertContains(response, "Kaduna Express")
+        self.assertContains(response, "2500.00")
+        self.assertContains(response, 'name="date"')
+        self.assertContains(response, 'action="' + reverse("available_seats", args=[self.schedule.pk]) + '"')
+        self.assertContains(response, "Choose seats")
+
+    def test_date_from_results_opens_selected_train_seats(self):
+        response = self.client.get(reverse("available_seats", args=[self.schedule.pk]), {"date": self.day.isoformat()})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Coach seat map")
+
+    def test_missing_date_does_not_create_booking_or_show_seat_map(self):
+        response = self.client.get(reverse("available_seats", args=[self.schedule.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(Booking.objects.exists())
