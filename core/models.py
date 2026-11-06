@@ -169,6 +169,37 @@ class WalletTransaction(models.Model):
         constraints = [models.CheckConstraint(condition=Q(amount__gt=0), name="wallet_transaction_positive")]
 
 
+class PaymentTransaction(models.Model):
+    """Provider transaction ledger; never use browser redirects as payment proof."""
+    class Status(models.TextChoices):
+        INITIATED = "initiated", "Initiated"
+        PENDING = "pending", "Pending"
+        SUCCESS = "success", "Successful"
+        FAILED = "failed", "Failed"
+        REVIEW = "review", "Needs review"
+        REFUND_PENDING = "refund_pending", "Refund pending"
+        REFUNDED = "refunded", "Refunded"
+
+    booking = models.ForeignKey(Booking, on_delete=models.PROTECT, related_name="paystack_payments")
+    reference = models.CharField(max_length=70, unique=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="NGN")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.INITIATED)
+    gateway_status = models.CharField(max_length=32, blank=True)
+    authorization_url = models.URLField(max_length=500, blank=True)
+    refund_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["booking"], condition=Q(status__in=["initiated", "pending"]),
+                name="one_active_paystack_attempt",
+            ),
+        ]
+
+
 class PassengerReport(models.Model):
     class Status(models.TextChoices):
         OPEN = "open", "Open"
