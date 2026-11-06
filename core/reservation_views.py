@@ -8,7 +8,7 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from .models import IdentityReview
+from .models import IdentityReview, PaymentTransaction
 from .reservation_service import reserve_seat
 from .cancellation_service import cancel_booking
 
@@ -36,7 +36,10 @@ def cancel_reservation(request, booking_id):
         return HttpResponseNotAllowed(["POST"])
     try:
         refund = cancel_booking(user=request.user, booking_id=booking_id)
-        messages.success(request, f"Booking cancelled. ₦{refund:,.2f} credited to your wallet as applicable.")
+        if PaymentTransaction.objects.filter(booking_id=booking_id, status=PaymentTransaction.Status.REFUND_PENDING).exists():
+            messages.success(request, f"Booking cancelled. ₦{refund:,.2f} is awaiting Paystack refund review; no wallet credit was issued.")
+        else:
+            messages.success(request, f"Booking cancelled. ₦{refund:,.2f} credited to your wallet as applicable.")
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
     return redirect("my_bookings")
