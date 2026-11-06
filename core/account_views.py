@@ -53,7 +53,7 @@ def my_bookings(request):
     expire_holds()
     bookings = Booking.objects.filter(user=request.user).select_related(
         "schedule__route__origin", "schedule__route__destination", "seat"
-    ).order_by("-created_at")
+    ).prefetch_related("paystack_payments").order_by("-created_at")
     wallet = Wallet.objects.filter(user=request.user).first()
     transactions = WalletTransaction.objects.filter(wallet=wallet).select_related("booking").order_by("-created_at")[:20] if wallet else []
     return render(request, "core/bookings.html", {"bookings": bookings, "wallet_balance": wallet.balance if wallet else 0, "transactions": transactions})
