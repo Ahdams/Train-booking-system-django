@@ -1,6 +1,6 @@
 """Inventory management and read-only financial records."""
 from django.contrib import admin
-from .models import Station, Route, Train, Coach, Seat, Schedule, Fare, Booking, Wallet, WalletTransaction, PassengerReport
+from .models import Station, Route, Train, Coach, Seat, Schedule, Fare, Booking, Wallet, WalletTransaction, PassengerReport, PaymentTransaction
 
 for model in (Station, Route, Train, Coach, Seat, Schedule, Fare, PassengerReport):
     admin.site.register(model)
@@ -38,6 +38,20 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     list_display = ("wallet", "booking", "kind", "amount", "balance_after", "created_at")
     list_filter = ("kind",)
     readonly_fields = ("wallet", "booking", "kind", "amount", "balance_after", "created_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ("reference", "booking", "amount", "currency", "status", "refund_amount", "created_at")
+    list_filter = ("status", "currency")
+    search_fields = ("reference", "booking__reference")
+    readonly_fields = ("booking", "reference", "amount", "currency", "status", "gateway_status", "authorization_url", "refund_amount", "created_at", "updated_at")
 
     def has_add_permission(self, request):
         return False

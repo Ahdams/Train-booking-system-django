@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Booking, Wallet, WalletTransaction
+from .models import Booking, Wallet, WalletTransaction, PaymentTransaction
 from .reservation_service import departure_at, expire_holds
 
 
@@ -42,6 +42,14 @@ def cancel_booking(*, user, booking_id, now=None):
         if percentage == 0:
             raise ValidationError("This train has departed. Cancellation is no longer available.")
         amount = (booking.fare_paid * percentage).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        paystack = PaymentTransaction.objects.select_for_update().filter(booking=booking, status=PaymentTransaction.Status.SUCCESS).first()
+        if paystack:
+            paystack.status = PaymentTransaction.Status.REFUND_PENDING
+            paystack.refund_amount = amount
+            paystack.save(update_fields=["status", "refund_amount", "updated_at"])
+            booking.status = Booking.Status.CANCELLED
+            booking.save(update_fields=["status"])
+            return amount
         if booking.fare_paid > 0 and not WalletTransaction.objects.filter(
             booking=booking, kind=WalletTransaction.Kind.DEBIT, amount=booking.fare_paid,
         ).exists():

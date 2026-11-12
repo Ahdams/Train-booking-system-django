@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Booking, Wallet, WalletTransaction, JourneyDisruption
+from .models import Booking, Wallet, WalletTransaction, JourneyDisruption, PaymentTransaction
 from .reservation_service import departure_at, expire_holds
 
 
@@ -37,6 +37,8 @@ def confirm_with_wallet(*, user, booking_id):
             from .reservation_service import has_upcoming_confirmed_booking
             if has_upcoming_confirmed_booking(user, now):
                 raise ValidationError("Cancel your existing upcoming ticket before paying for another.")
+        if PaymentTransaction.objects.filter(booking=booking, status__in=[PaymentTransaction.Status.PENDING, PaymentTransaction.Status.INITIATED, PaymentTransaction.Status.SUCCESS, PaymentTransaction.Status.REVIEW, PaymentTransaction.Status.REFUND_PENDING]).exists():
+            raise ValidationError("A Paystack transaction exists for this reservation.")
         wallet = Wallet.objects.select_for_update().filter(user=user).first()
         if wallet is None or wallet.balance < booking.fare_paid:
             raise ValidationError("Insufficient wallet balance. No payment was taken.")

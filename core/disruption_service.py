@@ -1,7 +1,7 @@
 """Apply operator disruptions and wallet refunds in one transaction."""
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from .models import Booking, JourneyDisruption, Schedule, Wallet, WalletTransaction
+from .models import Booking, JourneyDisruption, Schedule, Wallet, WalletTransaction, PaymentTransaction
 
 
 @transaction.atomic
@@ -19,6 +19,16 @@ def apply_disruption(*, schedule, travel_date, status, reason, revised_departure
     ).order_by("pk"))
     for booking in bookings:
         if booking.status == Booking.Status.CONFIRMED:
+            paystack = PaymentTransaction.objects.select_for_update().filter(
+                booking=booking, status=PaymentTransaction.Status.SUCCESS,
+            ).first()
+            if paystack:
+                paystack.status = PaymentTransaction.Status.REFUND_PENDING
+                paystack.refund_amount = booking.fare_paid
+                paystack.save(update_fields=["status", "refund_amount", "updated_at"])
+                booking.status = Booking.Status.CANCELLED
+                booking.save(update_fields=["status"])
+                continue
             if booking.fare_paid > 0 and not WalletTransaction.objects.filter(
                 booking=booking, kind=WalletTransaction.Kind.DEBIT, amount=booking.fare_paid
             ).exists():

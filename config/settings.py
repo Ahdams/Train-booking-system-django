@@ -39,3 +39,7 @@ if not DEBUG and os.environ.get('DJANGO_PRODUCTION', '').lower() == 'true':
 
 # Identity images are private: no public MEDIA_URL route is configured.
 MEDIA_ROOT = BASE_DIR / 'private_uploads'
+
+# Test-only provider configuration; live keys are deliberately rejected.
+PAYSTACK_TEST_SECRET_KEY = os.environ.get("PAYSTACK_TEST_SECRET_KEY", "")
+PAYSTACK_WEBHOOK_SECRET = os.environ.get("PAYSTACK_WEBHOOK_SECRET", "")
