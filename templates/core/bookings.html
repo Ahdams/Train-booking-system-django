@@ -21,6 +21,9 @@
   .booking-actions button,.booking-actions a{display:inline-block;border-radius:10px;padding:11px 16px;font:inherit;font-size:13px;font-weight:750;cursor:pointer;text-decoration:none}
   .booking-pay{background:#087b6d;color:white;border:1px solid #087b6d}
   .booking-pay:hover{background:#066456}
+  .booking-wallet{background:#173d36;color:#fff;border:1px solid #173d36}
+  .booking-wallet:hover{background:#102f29}
+  .booking-wallet-note{font-size:12px;color:#64776f;margin:10px 0 0}
   .booking-cancel{background:white;color:#9c3e3e;border:1px solid #e2bdbd}
   .booking-actions .booking-ticket{background:#e7f4ef;color:#087b6d;border:1px solid #c9e5d9}
   .bookings-payment-info{border-top:1px solid #e4ebe6;margin-top:28px;padding-top:22px}
@@ -54,6 +57,12 @@
           <button class="booking-pay" type="submit">Pay ₦{{ booking.fare_paid }} with Paystack (test mode)</button>
         </form>
         {% endif %}
+        {% if booking.status == "held" %}
+        <form method="post" action="{% url 'wallet_checkout' booking.id %}">
+          {% csrf_token %}
+          <button class="booking-wallet" type="submit">Pay ₦{{ booking.fare_paid }} with Wallet</button>
+        </form>
+        {% endif %}
         {% if booking.status == "confirmed" %}
         <a class="booking-ticket" href="{% url 'ticket' booking.id %}">View / Print ticket</a>
         {% endif %}
@@ -62,6 +71,9 @@
           <button class="booking-cancel" type="submit">Cancel booking</button>
         </form>
       </div>
+      {% endif %}
+      {% if booking.status == "held" %}
+      <p class="booking-wallet-note">You can choose your wallet instead of Paystack. Your wallet needs enough funds. If a Paystack payment is pending, it must be resolved before wallet checkout to avoid duplicate charges.</p>
       {% endif %}
     </article>
     {% empty %}
